@@ -11,16 +11,4 @@ sudo apt install docker-ce -y
 sudo docker version
 
 
-kind: ConfigMap 
-apiVersion: v1 
-metadata: 
-  name: env-ecample 
-  namespace: example
-  data: 
-  DATABASE_POOL_SIZE: '100' 
-  BUCKET_NAME: 
-  DATABASE_POOL_TIMEOUT: '60000' 
-  MAIL_PASSWORD:  
-  S3_ACCESS_KEY: 
-  ENCRYPTION_KEY:  
 

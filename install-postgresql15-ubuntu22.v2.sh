@@ -7,9 +7,14 @@ sudo apt update -y
 echo "==== Install dependencies ===="
 sudo apt install -y wget gnupg lsb-release
 
-echo "==== Add PostgreSQL APT repository ===="
-wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/trusted.gpg.d/postgresql.gpg >/dev/null
-echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+echo "=== ADDING NEW POSTGRESQL KEY ==="
+sudo mkdir -p /usr/share/keyrings
+curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+  | sudo gpg --dearmor -o /usr/share/keyrings/postgresql.gpg
+
+echo "=== ADDING POSTGRESQL REPOSITORY ==="
+echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt jammy-pgdg main" \
+  | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
 
 echo "==== Update repo ===="
 sudo apt update -y

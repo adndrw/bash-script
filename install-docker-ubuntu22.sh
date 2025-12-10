@@ -9,6 +9,3 @@ sudo apt update -y
 sudo apt install docker-ce -y
 # sudo systemctl status docker
 sudo docker version
-
-
-

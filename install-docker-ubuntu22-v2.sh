@@ -8,7 +8,7 @@
 set -e
 
 echo "=== [1/7] Update system packages ==="
-sudo apt update -y && sudo apt upgrade -y
+sudo apt update -y 
 
 echo "=== [2/7] Install required dependencies ==="
 sudo apt install ca-certificates curl gnupg lsb-release -y

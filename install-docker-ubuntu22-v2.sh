@@ -1,7 +1,7 @@
 #!/bin/bash
 # =====================================================
 # Script Install Docker & Docker Compose on Ubuntu 22.04
-# Author : ChatGPT (for Adnan)
+# Author : adndrw_
 # Date   : 2025-10-15
 # =====================================================
 

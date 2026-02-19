@@ -45,3 +45,6 @@ echo "==== Installation Completed Successfully ===="
 echo "PostgreSQL 15 installed!"
 echo "postgres user password: postgres123"
 echo "You may change it using: sudo -u postgres psql"
+
+
+ALTER USER postgres WITH PASSWORD 'x9U2bU-#bp4h#hG^';

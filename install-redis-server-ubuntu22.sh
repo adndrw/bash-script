@@ -9,8 +9,8 @@ sudo sed -i 's/bind 127.0.0.1 -::1/bind 0.0.0.0/' /etc/redis/redis.conf
 sudo cat /etc/redis/redis.conf | grep "bind "
 sudo sed -i 's/protected-mode yes/protected-mode no/' /etc/redis/redis.conf
 sudo cat /etc/redis/redis.conf | grep protected-mode
-sudo sed -i 's/# requirepass foobared/requirepass ijinmasuk/' /etc/redis/redis.conf
-sudo cat /etc/redis/redis.conf | grep requirepass
+#sudo sed -i 's/# requirepass foobared/requirepass ijinmasuk/' /etc/redis/redis.conf
+#sudo cat /etc/redis/redis.conf | grep requirepass
 sudo systemctl restart redis-server.service
 sudo systemctl enable redis-server.service
 sudo systemctl status redis-server.service | cat

@@ -18,7 +18,9 @@ echo ""
 # Check root
 if [ "$EUID" -ne 0 ]; then
     echo "ERROR: Please run this script with sudo."
-    echo "Example: sudo ./install-zabbix-agent.sh"
+    echo ""
+    echo "Example:"
+    echo "sudo ./install-zabbix-agent.sh"
     exit 1
 fi
 
@@ -28,73 +30,126 @@ if ! grep -q 'VERSION_ID="22.04"' /etc/os-release; then
     exit 1
 fi
 
-# Input Zabbix Hostname
-while true; do
-    read -rp "Enter Zabbix Hostname: " ZABBIX_HOSTNAME
+# ==========================================
+# INPUT ZABBIX HOSTNAME
+# ==========================================
 
-    if [ -n "$ZABBIX_HOSTNAME" ]; then
-        break
+while true; do
+    echo ""
+    read -r -p "Enter Zabbix Hostname: " ZABBIX_HOSTNAME < /dev/tty
+
+    # Remove leading/trailing whitespace
+    ZABBIX_HOSTNAME="$(echo "${ZABBIX_HOSTNAME}" | xargs)"
+
+    if [ -z "${ZABBIX_HOSTNAME}" ]; then
+        echo "ERROR: Hostname cannot be empty."
+        continue
     fi
 
-    echo "Hostname cannot be empty."
+    # Validate hostname
+    if [[ ! "${ZABBIX_HOSTNAME}" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+        echo "ERROR: Invalid hostname."
+        echo "Allowed characters: a-z A-Z 0-9 . _ -"
+        continue
+    fi
+
+    break
 done
 
 echo ""
+echo "=========================================="
+echo "Installation Configuration"
+echo "=========================================="
 echo "Zabbix Hostname : ${ZABBIX_HOSTNAME}"
 echo "Zabbix Server   : ${ZABBIX_SERVER}"
+echo "=========================================="
 echo ""
 
-# Download Zabbix repository
+read -r -p "Continue installation? [y/N]: " CONFIRM < /dev/tty
+
+if [[ ! "${CONFIRM}" =~ ^[Yy]$ ]]; then
+    echo "Installation cancelled."
+    exit 0
+fi
+
+# ==========================================
+# INSTALL ZABBIX REPOSITORY
+# ==========================================
+
+echo ""
 echo "[1/5] Downloading Zabbix repository..."
 
 wget -q "${ZABBIX_RELEASE_URL}" -O "${ZABBIX_RELEASE_DEB}"
 
-# Install Zabbix repository
 echo "[2/5] Installing Zabbix repository..."
 
 dpkg -i "${ZABBIX_RELEASE_DEB}"
 
-# Update repository
+# ==========================================
+# UPDATE REPOSITORY
+# ==========================================
+
 echo "[3/5] Updating APT repository..."
 
 apt update
 
-# Install Zabbix Agent
+# ==========================================
+# INSTALL ZABBIX AGENT
+# ==========================================
+
 echo "[4/5] Installing Zabbix Agent..."
 
 apt install -y zabbix-agent
 
-# Configure Zabbix Agent
+# ==========================================
+# CONFIGURE ZABBIX AGENT
+# ==========================================
+
 echo "[5/5] Configuring Zabbix Agent..."
 
 sed -i "s/^Server=.*/Server=${ZABBIX_SERVER}/" "${ZABBIX_CONFIG}"
 sed -i "s/^ServerActive=.*/ServerActive=${ZABBIX_SERVER}/" "${ZABBIX_CONFIG}"
 sed -i "s/^Hostname=.*/Hostname=${ZABBIX_HOSTNAME}/" "${ZABBIX_CONFIG}"
 
-# Enable and restart service
+# ==========================================
+# ENABLE & START SERVICE
+# ==========================================
+
 systemctl enable zabbix-agent
 systemctl restart zabbix-agent
 
 # Cleanup
 rm -f "${ZABBIX_RELEASE_DEB}"
 
+# ==========================================
+# VERIFY
+# ==========================================
+
 echo ""
 echo "=========================================="
 echo "   Installation Completed"
 echo "=========================================="
 echo ""
-echo "Hostname      : ${ZABBIX_HOSTNAME}"
-echo "Zabbix Server : ${ZABBIX_SERVER}"
-echo ""
-
 echo "Configuration:"
 echo "------------------------------------------"
-grep -E '^(Server|ServerActive|Hostname)=' "${ZABBIX_CONFIG}"
-echo "------------------------------------------"
 
+grep -E '^(Server|ServerActive|Hostname)=' "${ZABBIX_CONFIG}"
+
+echo "------------------------------------------"
 echo ""
-echo "Service Status:"
-systemctl is-active zabbix-agent
+
+if systemctl is-active --quiet zabbix-agent; then
+    echo "Zabbix Agent : RUNNING"
+else
+    echo "Zabbix Agent : FAILED"
+    echo ""
+    echo "Service status:"
+    systemctl --no-pager -l status zabbix-agent
+    echo ""
+    echo "Journal:"
+    journalctl -u zabbix-agent --no-pager -n 30
+    exit 1
+fi
 
 echo ""
 echo "=========================================="

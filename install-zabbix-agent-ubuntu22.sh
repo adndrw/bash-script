@@ -3,74 +3,100 @@
 set -e
 
 ZABBIX_SERVER="192.168.0.11"
-ZABBIX_VERSION="6.0-4+ubuntu22.04"
-ZABBIX_DEB="zabbix-release_${ZABBIX_VERSION}_all.deb"
-ZABBIX_URL="https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/${ZABBIX_DEB}"
+ZABBIX_VERSION="6.0"
 
-echo "======================================"
-echo " Installing Zabbix Agent 6.0"
-echo "======================================"
+ZABBIX_RELEASE_URL="https://repo.zabbix.com/zabbix/${ZABBIX_VERSION}/ubuntu/pool/main/z/zabbix-release/zabbix-release_latest+ubuntu22.04_all.deb"
+ZABBIX_RELEASE_DEB="/tmp/zabbix-release.deb"
+ZABBIX_CONFIG="/etc/zabbix/zabbix_agentd.conf"
+
+echo "=========================================="
+echo "   Zabbix Agent ${ZABBIX_VERSION}"
+echo "   Ubuntu 22.04"
+echo "=========================================="
+echo ""
 
 # Check root
 if [ "$EUID" -ne 0 ]; then
-    echo "Please run this script with sudo."
+    echo "ERROR: Please run this script with sudo."
+    echo "Example: sudo ./install-zabbix-agent.sh"
     exit 1
 fi
 
-# Get hostname
-HOSTNAME=$(hostname)
+# Check Ubuntu 22.04
+if ! grep -q 'VERSION_ID="22.04"' /etc/os-release; then
+    echo "ERROR: This script is only for Ubuntu 22.04."
+    exit 1
+fi
 
-echo "[1/5] Hostname : ${HOSTNAME}"
-echo "[2/5] Zabbix Server : ${ZABBIX_SERVER}"
+# Input Zabbix Hostname
+while true; do
+    read -rp "Enter Zabbix Hostname: " ZABBIX_HOSTNAME
+
+    if [ -n "$ZABBIX_HOSTNAME" ]; then
+        break
+    fi
+
+    echo "Hostname cannot be empty."
+done
+
+echo ""
+echo "Zabbix Hostname : ${ZABBIX_HOSTNAME}"
+echo "Zabbix Server   : ${ZABBIX_SERVER}"
+echo ""
 
 # Download Zabbix repository
-echo "[3/5] Downloading Zabbix repository..."
-wget -q "${ZABBIX_URL}" -O "/tmp/${ZABBIX_DEB}"
+echo "[1/5] Downloading Zabbix repository..."
 
-# Install repository
-echo "[4/5] Installing Zabbix repository..."
-dpkg -i "/tmp/${ZABBIX_DEB}"
+wget -q "${ZABBIX_RELEASE_URL}" -O "${ZABBIX_RELEASE_DEB}"
+
+# Install Zabbix repository
+echo "[2/5] Installing Zabbix repository..."
+
+dpkg -i "${ZABBIX_RELEASE_DEB}"
 
 # Update repository
-apt update -y
+echo "[3/5] Updating APT repository..."
+
+apt update
 
 # Install Zabbix Agent
-echo "Installing Zabbix Agent..."
+echo "[4/5] Installing Zabbix Agent..."
+
 apt install -y zabbix-agent
 
 # Configure Zabbix Agent
-echo "Configuring Zabbix Agent..."
+echo "[5/5] Configuring Zabbix Agent..."
 
-CONFIG="/etc/zabbix/zabbix_agentd.conf"
-
-sed -i "s/^Server=.*/Server=${ZABBIX_SERVER}/" "${CONFIG}"
-sed -i "s/^ServerActive=.*/ServerActive=${ZABBIX_SERVER}/" "${CONFIG}"
-sed -i "s/^Hostname=.*/Hostname=${HOSTNAME}/" "${CONFIG}"
-
-# If configuration doesn't exist, append it
-grep -q "^Server=" "${CONFIG}" || echo "Server=${ZABBIX_SERVER}" >> "${CONFIG}"
-grep -q "^ServerActive=" "${CONFIG}" || echo "ServerActive=${ZABBIX_SERVER}" >> "${CONFIG}"
-grep -q "^Hostname=" "${CONFIG}" || echo "Hostname=${HOSTNAME}" >> "${CONFIG}"
+sed -i "s/^Server=.*/Server=${ZABBIX_SERVER}/" "${ZABBIX_CONFIG}"
+sed -i "s/^ServerActive=.*/ServerActive=${ZABBIX_SERVER}/" "${ZABBIX_CONFIG}"
+sed -i "s/^Hostname=.*/Hostname=${ZABBIX_HOSTNAME}/" "${ZABBIX_CONFIG}"
 
 # Enable and restart service
-echo "[5/5] Starting Zabbix Agent..."
-
 systemctl enable zabbix-agent
 systemctl restart zabbix-agent
 
-# Check service
-echo ""
-echo "======================================"
-echo " Zabbix Agent Status"
-echo "======================================"
-
-systemctl --no-pager --full status zabbix-agent
+# Cleanup
+rm -f "${ZABBIX_RELEASE_DEB}"
 
 echo ""
-echo "======================================"
-echo " Installation Complete"
-echo "======================================"
-echo "Hostname       : ${HOSTNAME}"
-echo "Zabbix Server   : ${ZABBIX_SERVER}"
-echo "Service         : zabbix-agent"
-echo "======================================"
+echo "=========================================="
+echo "   Installation Completed"
+echo "=========================================="
+echo ""
+echo "Hostname      : ${ZABBIX_HOSTNAME}"
+echo "Zabbix Server : ${ZABBIX_SERVER}"
+echo ""
+
+echo "Configuration:"
+echo "------------------------------------------"
+grep -E '^(Server|ServerActive|Hostname)=' "${ZABBIX_CONFIG}"
+echo "------------------------------------------"
+
+echo ""
+echo "Service Status:"
+systemctl is-active zabbix-agent
+
+echo ""
+echo "=========================================="
+echo "   DONE"
+echo "=========================================="

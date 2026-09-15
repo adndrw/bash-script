@@ -14,24 +14,6 @@ echo "   Install Zabbix Agent ${ZABBIX_VERSION}"
 echo "   Ubuntu 24.04"
 echo "=========================================="
 
-# Check root
-if [ "$EUID" -ne 0 ]; then
-    echo "ERROR: Run this script with sudo."
-    echo "Example: sudo ./install-zabbix-agent.sh"
-    exit 1
-fi
-
-# Check OS
-if ! grep -q "Ubuntu" /etc/os-release; then
-    echo "ERROR: This script is for Ubuntu."
-    exit 1
-fi
-
-if ! grep -q 'VERSION_ID="24.04"' /etc/os-release; then
-    echo "ERROR: This script is specifically for Ubuntu 24.04."
-    exit 1
-fi
-
 HOSTNAME=$(hostname)
 
 echo ""
@@ -40,10 +22,6 @@ echo "Zabbix Server  : ${ZABBIX_SERVER}"
 echo "Zabbix Version : ${ZABBIX_VERSION}"
 echo ""
 
-# Remove old/wrong Zabbix repository
-echo "[1/6] Removing old Zabbix repository..."
-
-rm -f /etc/apt/sources.list.d/zabbix.list
 
 # Download Zabbix repository
 echo "[2/6] Downloading Zabbix repository..."

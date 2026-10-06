@@ -15,7 +15,6 @@ echo "====================================================="
 echo
 echo "=== [1/7] Update system packages ==="
 sudo apt update -y
-sudo apt upgrade -y
 
 echo
 echo "=== [2/7] Install required dependencies ==="

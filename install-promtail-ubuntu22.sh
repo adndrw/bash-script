@@ -19,7 +19,7 @@ positions:
   filename: /tmp/positions.yaml
 
 clients:
-  - url: http://192.168.1.3:3100/loki/api/v1/push
+  - url: http://192.168.2.4:3100/loki/api/v1/push
 
 scrape_configs:
 - job_name: asset-inspection-cms-be
